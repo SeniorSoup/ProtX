@@ -1,18 +1,4 @@
-# ServerX (Minecraft 26.2, Fabric, server-side)
-
-Moderation utilities with LuckPerms permissions and an extension system. Server-only: players need nothing installed.
-
-## Install
-1. Fabric Loader 0.19.5+, Fabric API `0.161.0+26.2` (or newer 26.2 build), Java 25.
-2. Put `serverx-1.0.0.jar` in `mods/`. LuckPerms (Fabric 26.2) is optional but recommended.
-3. Data is stored in `config/serverx/` (`config.json`, `regions.json`, `prison.json`, `players.json`).
-
-## Build
-You need JDK 25. This project has no Gradle wrapper yet. Either run `gradle wrapper` once (Gradle 9.x),
-or copy `gradlew`, `gradlew.bat` and `gradle/` from https://github.com/FabricMC/fabric-example-mod (branch `26.2`). Then:
-
-    ./gradlew build        # jar in build/libs/serverx-1.0.0.jar (not the -sources jar)
-
+# ServerX 
 ## Commands
 | Command | What it does |
 |---|---|
