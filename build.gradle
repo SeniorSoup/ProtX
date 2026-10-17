@@ -11,22 +11,23 @@ base {
 }
 
 repositories {
-	mavenCentral()
+	// Loom adds the Minecraft and Fabric repositories automatically.
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	implementation "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
-	include "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+	// Fabric API: events, commands and the permissions API that LuckPerms hooks into.
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 processResources {
-	inputs.property "version", project.version
+	def modVersion = project.version
+	inputs.property "version", modVersion
+
 	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+		expand "version": modVersion
 	}
 }
 
@@ -36,6 +37,7 @@ tasks.withType(JavaCompile).configureEach {
 
 java {
 	withSourcesJar()
+
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
 }

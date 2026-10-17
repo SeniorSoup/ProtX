@@ -1,8 +1,7 @@
-package dev.serverx.mixin;
+package com.serverx.mixin;
 
-import dev.serverx.ServerX;
-import java.util.ArrayList;
-import java.util.List;
+import com.serverx.ServerX;
+import com.serverx.protlib.ProtLib;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ServerExplosion;
@@ -13,7 +12,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Removes blocks inside protected regions from every explosion (creepers, TNT, beds, crystals...). */
+import java.util.List;
+
+/**
+ * Removes blocks inside explosion-proof regions from the list of blocks an explosion is about to
+ * destroy. Creepers, TNT, TNT minecarts, end crystals, ghast fireballs and so on all go through here.
+ */
 @Mixin(ServerExplosion.class)
 public abstract class ServerExplosionMixin {
 
@@ -22,9 +26,11 @@ public abstract class ServerExplosionMixin {
 	private ServerLevel level;
 
 	@Inject(method = "calculateExplodedPositions", at = @At("RETURN"), cancellable = true)
-	private void serverx$protectRegions(CallbackInfoReturnable<List<BlockPos>> cir) {
-		List<BlockPos> filtered = new ArrayList<>(cir.getReturnValue());
-		filtered.removeIf(pos -> ServerX.data().isProtected(this.level, pos));
-		cir.setReturnValue(filtered);
+	private void serverx$spareProtectedBlocks(CallbackInfoReturnable<List<BlockPos>> cir) {
+		ProtLib protLib = ServerX.api().findService(ProtLib.class).orElse(null);
+		if (protLib == null) {
+			return;
+		}
+		cir.setReturnValue(protLib.filterExplosion(this.level, cir.getReturnValue()));
 	}
 }

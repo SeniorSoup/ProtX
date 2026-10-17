@@ -1,40 +1,80 @@
-# ServerX (Fabric, Minecraft 26.2, Java 25)
+# ServerX (Minecraft 26.2, Fabric, server-side)
 
-Moderation utility mod with LuckPerms integration (via fabric-permissions-api, which LuckPerms hooks into).
+Moderation utilities with LuckPerms permissions and an extension system. Server-only: players need nothing installed.
+
+## Install
+1. Fabric Loader 0.19.5+, Fabric API `0.161.0+26.2` (or newer 26.2 build), Java 25.
+2. Put `serverx-1.0.0.jar` in `mods/`. LuckPerms (Fabric 26.2) is optional but recommended.
+3. Data is stored in `config/serverx/` (`config.json`, `regions.json`, `prison.json`, `players.json`).
 
 ## Build
-Needs JDK 25 and Gradle 9.5+.
-    gradle wrapper --gradle-version 9.5.1
-    ./gradlew build
-Jar: build/libs/serverx-1.0.0.jar  (permissions API is bundled via `include`).
-Server needs: Fabric Loader 0.19.x, Fabric API, LuckPerms (Fabric).
+You need JDK 25. This project has no Gradle wrapper yet. Either run `gradle wrapper` once (Gradle 9.x),
+or copy `gradlew`, `gradlew.bat` and `gradle/` from https://github.com/FabricMC/fabric-example-mod (branch `26.2`). Then:
 
-## Permission nodes (grant with LuckPerms, console always allowed)
-| Node | Use |
-|---|---|
-| serverx.cmd | /cmd |
-| serverx.protect | /protect (all subcommands) |
-| serverx.setprison | /setprison |
-| serverx.punishban | /punishban |
-| serverx.pardonban | /pardonban |
-| serverx.prison | /prison |
-| serverx.ipban | /ipban |
-| serverx.ipunban | /ipunban |
-| serverx.ipbanlist | /ipbanlist |
-| serverx.inv | /inv (view only) |
-| serverx.inv.edit | /inv with editing |
-| serverx.bypass | ignore region rules |
-
-First-time setup from the server console:
-    lp user <you> permission set serverx.* true
-(or `lp group admin permission set serverx.* true`)
+    ./gradlew build        # jar in build/libs/serverx-1.0.0.jar (not the -sources jar)
 
 ## Commands
-- /cmd <command> : runs as console, output returned to you
-- /protect make <name> | edit <name> bounds | edit <name> decay <sec> | del <name> | list | help
-- /setprison, /punishban <player>, /pardonban <player>, /prison <player> <time>   (time: 30s 10m 2h 1d 1w 1h30m)
-- /ipban <player|ip> [reason] : bans the IP, kicks everyone on it, and disconnects any account that joins from it later (their names are recorded as alts)
-- /ipunban <ip|name>, /ipbanlist
-- /inv <player> : chest GUI with the player's live inventory (armor + offhand on top row, main inventory, hotbar). Editing needs serverx.inv.edit
+| Command | What it does |
+|---|---|
+| `/cmd <command>` | Runs the command as the server console (as if typed in the panel). Logged to console. |
+| `/protect make <name>` | Gives a golden pickaxe wand: left-click corner 1, right-click corner 2. |
+| `/protect edit <name> bounds` | Re-select the corners. |
+| `/protect edit <name> flag <flag> <true/false>` | Switch a rule on/off per region. |
+| `/protect edit <name> decay <seconds>` | How long blocks placed in the region last. |
+| `/protect edit <name> rename <newname>` | Rename. |
+| `/protect del <name>` / `list` / `info <name>` / `help` / `cancel` | Manage regions. |
+| `/punishban <player> [reason]` | Permanent prison. Works on offline players (jailed on next login). |
+| `/pardonban <player>` | Release, and send them back to where they were. |
+| `/prison <player> <time> [reason]` | Timed prison. Time: `30s`, `10m`, `2h`, `1d`, `1h30m` (bare number = minutes). Timer runs while offline too. |
+| `/setprison` | Sets the prison to where you stand. |
+| `/rmprison` | Removes the prison location. Refuses while anyone is jailed; `/rmprison force` releases everyone first. |
+| `/prisonlist` | Shows the prison location and every prisoner (permanent / time left, who jailed them, reason, offline marker). |
+| `/strictprotect make <name>` | Like `/protect make`, but fully locked: no placing, breaking or using anything (chests, doors, signs too). |
+| `/strictprotect set <region> <true/false>` | Turn an existing region strict, or back to normal. |
+| `/serverx` / `/serverx reload` | Status / reload config, regions, prison. |
 
-Data is stored in config/serverx.json.
+### Region rules (defaults)
+Players without `serverx.protect.bypass` inside a region: cannot break blocks, can place blocks (they vanish after 2 s),
+can use chests/barrels/doors/trapdoors/buttons/levers/crafting etc., cannot touch signs. Explosions
+(creepers, TNT, crystals...) never destroy blocks there. Regions can overlap; flags: `explosion-proof`, `no-break`,
+`no-place`, `block-decay`, `lock-signs`, `allow-interact`.
+
+### Prisoners
+Cannot use items, break/place/use blocks, hit or use entities, or run commands. They are pulled back if they walk
+more than `prisonLeashRadius` (default 16) blocks away or change dimension.
+
+## LuckPerms nodes
+Grant with e.g. `/lp group mod permission set serverx.prison true`. Without LuckPerms (or if a node is unset),
+vanilla op levels are the fallback shown below.
+
+| Node | Fallback |
+|---|---|
+| `serverx.cmd` | op level 4 (owners) |
+| `serverx.admin` | op 3 |
+| `serverx.protect.make` / `.edit` / `.del` | op 3 |
+| `serverx.protect.list` / `.help` | op 2 |
+| `serverx.protect.bypass` | op 3 |
+| `serverx.punishban` / `serverx.pardonban` / `serverx.setprison` | op 3 |
+| `serverx.prison` / `serverx.prisonlist` | op 2 |
+| `serverx.rmprison` / `serverx.strictprotect` | op 3 |
+| `serverx.prison.exempt` | nobody (must be granted) |
+
+`serverx.cmd` is effectively console access. Give it to nobody you would not give the panel to.
+
+## Adding extensions
+Everything is a module (`com.serverx.api.ServerXModule`): `onInit`, `registerCommands`, `onEnable`, `onDisable`, `onReload`.
+
+**Inside this project:** create a class implementing `ServerXModule`, then add `modules.register(new MyModule());` in `ServerX.java`.
+
+**As a separate mod:** depend on ServerX, implement `ServerXModule`, and declare it in your `fabric.mod.json`:
+
+    "entrypoints": { "serverx": [ "com.me.MyModule" ] }
+
+Modules get `ServerXApi`: scheduler, config, player directory (offline lookups), join/leave hooks, a service registry
+(`api.service(ProtLib.class)`, `api.service(PrisonService.class)`), plus `Perm`/`Perms` for LuckPerms nodes,
+`JsonStore` for saving data and `Msg` for consistent chat messages.
+
+## ProtLib (the protection library)
+`com.serverx.protlib`: `Region`, `ProtFlag`, `Interactables`, `ProtLib`. Other modules can add their own flags
+(`protLib.registerFlag(new ProtFlag("no-pvp", false, "..."))`, shows up in `/protect edit/info` automatically), add
+interactable blocks (`Interactables.addBlock`), query regions (`protLib.at(level, pos)`) and use the decay tracker.

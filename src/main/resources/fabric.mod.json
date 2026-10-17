@@ -3,16 +3,20 @@
   "id": "serverx",
   "version": "${version}",
   "name": "ServerX",
-  "description": "Moderation utility mod: console commands, protected regions and a prison system, integrated with LuckPerms.",
-  "authors": ["You"],
-  "license": "MIT",
-  "environment": "*",
+  "description": "Server-side moderation utilities (protected regions, prison, remote console) with LuckPerms permission nodes and an extension API.",
+  "authors": [],
+  "license": "All-Rights-Reserved",
+  "environment": "server",
   "entrypoints": {
-    "main": ["dev.serverx.ServerX"]
+    "main": [
+      "com.serverx.ServerX"
+    ]
   },
-  "mixins": ["serverx.mixins.json"],
+  "mixins": [
+    "serverx.mixins.json"
+  ],
   "depends": {
-    "fabricloader": ">=0.19.1",
+    "fabricloader": ">=0.19.0",
     "minecraft": "~26.2",
     "java": ">=25",
     "fabric-api": "*"
