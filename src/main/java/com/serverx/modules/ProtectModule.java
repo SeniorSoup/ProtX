@@ -373,7 +373,7 @@ public final class ProtectModule implements ServerXModule {
 			return false;
 		}
 		CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-		return data != null && data.contains(WAND_TAG);
+		return data != null && data.copyTag().contains(WAND_TAG);
 	}
 
 	private static void removeWands(ServerPlayer player) {
