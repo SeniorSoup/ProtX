@@ -1,6 +1,6 @@
-package com.serverx.core;
+package com.protx.core;
 
-import com.serverx.ServerX;
+import com.protx.ProtX;
 
 import java.util.PriorityQueue;
 
@@ -31,7 +31,7 @@ public final class Scheduler {
 	private long now;
 	private long seq;
 
-	/** Ticks elapsed since ServerX started. */
+	/** Ticks elapsed since ProtX started. */
 	public long now() {
 		return now;
 	}
@@ -47,7 +47,7 @@ public final class Scheduler {
 		queue.add(new Task(now + period, seq++, period, action));
 	}
 
-	/** Called by ServerX once per server tick. */
+	/** Called by ProtX once per server tick. */
 	public void tick() {
 		now++;
 		Task task;
@@ -56,7 +56,7 @@ public final class Scheduler {
 			try {
 				task.action.run();
 			} catch (Throwable t) {
-				ServerX.LOGGER.error("Scheduled task failed", t);
+				ProtX.LOGGER.error("Scheduled task failed", t);
 			}
 			if (task.period > 0) {
 				queue.add(new Task(now + task.period, seq++, task.period, task.action));

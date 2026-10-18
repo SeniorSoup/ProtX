@@ -1,8 +1,8 @@
-package com.serverx.core;
+package com.protx.core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.serverx.ServerX;
+import com.protx.ProtX;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -27,12 +27,11 @@ public final class JsonStore {
 			T value = GSON.fromJson(Files.readString(file), type);
 			return value != null ? value : fallback.get();
 		} catch (Exception e) {
-			ServerX.LOGGER.error("Could not read {} - moving it aside and starting fresh", file, e);
+			ProtX.LOGGER.error("Could not read {} - moving it aside and starting fresh", file, e);
 			try {
 				Files.move(file, file.resolveSibling(file.getFileName() + ".corrupt-" + System.currentTimeMillis()));
 			} catch (IOException ignored) {
 				// nothing more we can do
-			}
 			return fallback.get();
 		}
 	}
@@ -48,7 +47,7 @@ public final class JsonStore {
 				Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
 			}
 		} catch (IOException e) {
-			ServerX.LOGGER.error("Could not write {}", file, e);
+			ProtX.LOGGER.error("Could not write {}", file, e);
 		}
 	}
 }

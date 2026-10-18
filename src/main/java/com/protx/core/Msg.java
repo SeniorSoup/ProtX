@@ -1,4 +1,4 @@
-package com.serverx.core;
+package com.protx.core;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -6,7 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Chat message helpers so every ServerX message looks the same. */
+/** Chat message helpers so every ProtX message looks the same. */
 public final class Msg {
 
 	private Msg() {
@@ -14,7 +14,7 @@ public final class Msg {
 
 	private static MutableComponent prefixed(String text, ChatFormatting color) {
 		return Component.empty()
-			.append(Component.literal("[ServerX] ").withStyle(ChatFormatting.GOLD))
+			.append(Component.literal("[ProtX] ").withStyle(ChatFormatting.GOLD))
 			.append(Component.literal(text).withStyle(color));
 	}
 

@@ -1,6 +1,6 @@
-package com.serverx.core;
+package com.protx.core;
 
-import com.serverx.ServerX;
+import com.protx.ProtX;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.Locale;
@@ -22,7 +22,7 @@ public final class Teleports {
 		try {
 			server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), command);
 		} catch (Exception e) {
-			ServerX.LOGGER.error("Teleport failed: {}", command, e);
+			ProtX.LOGGER.error("Teleport failed: {}", command, e);
 		}
 	}
 }

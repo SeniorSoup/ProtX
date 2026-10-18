@@ -1,4 +1,4 @@
-package com.serverx.core;
+package com.protx.core;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.Identifier;
@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * checks; if no permission manager has an opinion, the vanilla op level in {@code fallback}
  * decides (or "deny" for flag-style nodes).
  *
- * <p>The id {@code serverx:protect.make} shows up in LuckPerms as {@code serverx.protect.make}.
+ * <p>The id {@code protx:protect.make} shows up in LuckPerms as {@code protx.protect.make}.
  */
 public final class Perm {
 
@@ -26,12 +26,12 @@ public final class Perm {
 
 	/** A node that vanilla ops of at least {@code fallback} get automatically. */
 	public static Perm of(String path, PermissionLevel fallback) {
-		return new Perm(Identifier.fromNamespaceAndPath("serverx", path), fallback);
+		return new Perm(Identifier.fromNamespaceAndPath("protx", path), fallback);
 	}
 
 	/** A node nobody has unless it is explicitly granted (e.g. immunity flags). */
 	public static Perm flag(String path) {
-		return new Perm(Identifier.fromNamespaceAndPath("serverx", path), null);
+		return new Perm(Identifier.fromNamespaceAndPath("protx", path), null);
 	}
 
 	public boolean has(CommandSourceStack source) {
@@ -46,7 +46,7 @@ public final class Perm {
 		return this::has;
 	}
 
-	/** The node as typed into LuckPerms, e.g. "serverx.protect.make". */
+	/** The node as typed into LuckPerms, e.g. "protx.protect.make". */
 	public String node() {
 		return id.getNamespace() + "." + id.getPath();
 	}

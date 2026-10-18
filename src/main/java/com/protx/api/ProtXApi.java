@@ -1,10 +1,10 @@
-package com.serverx.api;
+package com.protx.api;
 
-import com.serverx.ServerX;
-import com.serverx.core.JsonStore;
-import com.serverx.core.PlayerDirectory;
-import com.serverx.core.Scheduler;
-import com.serverx.core.ServerXConfig;
+import com.protx.ProtX;
+import com.protx.core.JsonStore;
+import com.protx.core.PlayerDirectory;
+import com.protx.core.Scheduler;
+import com.protx.core.ProtXConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,10 +22,10 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * The surface modules use to talk to ServerX: scheduling, config, player lookup, join/leave
+ * The surface modules use to talk to ProtX: scheduling, config, player lookup, join/leave
  * hooks and a tiny service registry so modules can expose APIs to each other.
  */
-public final class ServerXApi {
+public final class ProtXApi {
 
 	private static final int NOTICE_COOLDOWN_TICKS = 40;
 
@@ -38,10 +38,10 @@ public final class ServerXApi {
 	private final Set<UUID> online = new HashSet<>();
 	private final Map<UUID, Long> lastNotice = new HashMap<>();
 
-	private ServerXConfig config = new ServerXConfig();
+	private ProtXConfig config = new ProtXConfig();
 	private MinecraftServer server;
 
-	public ServerXApi(Path dataDir) {
+	public ProtXApi(Path dataDir) {
 		this.dataDir = dataDir;
 		this.players = new PlayerDirectory(dataDir.resolve("players.json"));
 	}
@@ -60,7 +60,7 @@ public final class ServerXApi {
 		return server != null;
 	}
 
-	/** config/serverx. Put your module's files in here. */
+	/** config/protx. Put your module's files in here. */
 	public Path dataDir() {
 		return dataDir;
 	}
@@ -69,7 +69,7 @@ public final class ServerXApi {
 		return scheduler;
 	}
 
-	public ServerXConfig config() {
+	public ProtXConfig config() {
 		return config;
 	}
 
@@ -88,7 +88,7 @@ public final class ServerXApi {
 	}
 
 	public <T> T service(Class<T> type) {
-		return findService(type).orElseThrow(() -> new IllegalStateException("No ServerX service registered for " + type.getName()));
+		return findService(type).orElseThrow(() -> new IllegalStateException("No ProtX service registered for " + type.getName()));
 	}
 
 	// ---- join / leave --------------------------------------------------------------------
@@ -116,11 +116,11 @@ public final class ServerXApi {
 		player.sendSystemMessage(message);
 	}
 
-	// ---- internal (used by ServerX) ------------------------------------------------------
+	// ---- internal (used by ProtX) ------------------------------------------------------
 
 	public void attach(MinecraftServer server) {
 		this.server = server;
-		this.config = JsonStore.load(dataDir.resolve("config.json"), ServerXConfig.class, ServerXConfig::new);
+		this.config = JsonStore.load(dataDir.resolve("config.json"), ProtXConfig.class, ProtXConfig::new);
 		JsonStore.save(dataDir.resolve("config.json"), config); // writes defaults for new keys
 		this.players.load();
 	}
@@ -133,7 +133,7 @@ public final class ServerXApi {
 	}
 
 	public void reloadConfig() {
-		this.config = JsonStore.load(dataDir.resolve("config.json"), ServerXConfig.class, ServerXConfig::new);
+		this.config = JsonStore.load(dataDir.resolve("config.json"), ProtXConfig.class, ProtXConfig::new);
 	}
 
 	/** Polls the player list; runs every few ticks. Version-proof replacement for join/leave events. */
@@ -150,7 +150,7 @@ public final class ServerXApi {
 					try {
 						listener.accept(player);
 					} catch (Exception e) {
-						ServerX.LOGGER.error("Join listener failed", e);
+						ProtX.LOGGER.error("Join listener failed", e);
 					}
 				}
 			}
@@ -162,7 +162,7 @@ public final class ServerXApi {
 					try {
 						listener.accept(id);
 					} catch (Exception e) {
-						ServerX.LOGGER.error("Leave listener failed", e);
+						ProtX.LOGGER.error("Leave listener failed", e);
 					}
 				}
 			}

@@ -1,4 +1,4 @@
-package com.serverx.protlib;
+package com.protx.protlib;
 
 import net.minecraft.core.BlockPos;
 

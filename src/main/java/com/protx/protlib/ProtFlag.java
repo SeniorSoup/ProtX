@@ -1,4 +1,4 @@
-package com.serverx.protlib;
+package com.protx.protlib;
 
 /**
  * A per-region switch. All built-in flags are "protection on" when true. Extensions can add their

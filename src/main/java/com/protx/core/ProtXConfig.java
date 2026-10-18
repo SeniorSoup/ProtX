@@ -1,7 +1,7 @@
-package com.serverx.core;
+package com.protx.core;
 
-/** config/serverx/config.json. New fields get written with their defaults on next start. */
-public final class ServerXConfig {
+/** config/protx/config.json. New fields get written with their defaults on next start. */
+public final class ProtXConfig {
 
 	/** How far (in blocks) a prisoner may wander from the prison point before being pulled back. */
 	public int prisonLeashRadius = 16;

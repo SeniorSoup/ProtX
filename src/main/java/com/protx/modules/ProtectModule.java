@@ -1,4 +1,4 @@
-package com.serverx.modules;
+package com.protx.modules;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -7,15 +7,15 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.serverx.api.ServerXApi;
-import com.serverx.api.ServerXModule;
-import com.serverx.core.Location;
-import com.serverx.core.Msg;
-import com.serverx.core.Perms;
-import com.serverx.protlib.Interactables;
-import com.serverx.protlib.ProtFlag;
-import com.serverx.protlib.ProtLib;
-import com.serverx.protlib.Region;
+import com.protx.api.ProtXApi;
+import com.protx.api.ProtXModule;
+import com.protx.core.Location;
+import com.protx.core.Msg;
+import com.protx.core.Perms;
+import com.protx.protlib.Interactables;
+import com.protx.protlib.ProtFlag;
+import com.protx.protlib.ProtLib;
+import com.protx.protlib.Region;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -27,6 +27,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -48,14 +50,14 @@ import java.util.UUID;
 /**
  * /protect: creates and manages protected regions (built on ProtLib) and enforces them.
  *
- * <p>Inside a region, players without {@code serverx.protect.bypass}:
+ * <p>Inside a region, players without {@code protx.protect.bypass}:
  * cannot break blocks, can place blocks but they decay after the region's decay time (default 2s),
  * can use chests/barrels/doors/trapdoors/buttons/etc., and cannot touch signs.
  * Explosions never destroy blocks in the region. Every rule is a flag you can switch per region.
  */
-public final class ProtectModule implements ServerXModule {
+public final class ProtectModule implements ProtXModule {
 
-	private static final String WAND_TAG = "serverx_wand";
+	private static final String WAND_TAG = "protx_wand";
 
 	private static final class Session {
 		final String name;
@@ -72,7 +74,7 @@ public final class ProtectModule implements ServerXModule {
 		}
 	}
 
-	private ServerXApi api;
+	private ProtXApi api;
 	private ProtLib lib;
 	private final Map<UUID, Session> sessions = new HashMap<>();
 
@@ -84,7 +86,7 @@ public final class ProtectModule implements ServerXModule {
 	// ---- lifecycle -----------------------------------------------------------------------
 
 	@Override
-	public void onInit(ServerXApi api) {
+	public void onInit(ProtXApi api) {
 		this.api = api;
 		this.lib = new ProtLib(api);
 		api.registerService(ProtLib.class, lib);
@@ -93,6 +95,7 @@ public final class ProtectModule implements ServerXModule {
 		AttackBlockCallback.EVENT.register((player, level, hand, pos, direction) -> onAttackBlock(player, level, hand, pos));
 		PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> onBreak(player, level, pos));
 
+		api.scheduler().repeat(8, this::showSelections);
 		api.onPlayerLeave(sessions::remove);
 		api.onPlayerJoin(player -> {
 			if (!sessions.containsKey(player.getUUID())) {
@@ -102,18 +105,18 @@ public final class ProtectModule implements ServerXModule {
 	}
 
 	@Override
-	public void onEnable(ServerXApi api) {
+	public void onEnable(ProtXApi api) {
 		lib.load();
 	}
 
 	@Override
-	public void onDisable(ServerXApi api) {
+	public void onDisable(ProtXApi api) {
 		lib.flushDecays();
 		lib.save();
 	}
 
 	@Override
-	public void onReload(ServerXApi api) {
+	public void onReload(ProtXApi api) {
 		lib.load();
 	}
 
@@ -125,7 +128,7 @@ public final class ProtectModule implements ServerXModule {
 	}
 
 	@Override
-	public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, ServerXApi api) {
+	public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, ProtXApi api) {
 		dispatcher.register(Commands.literal("protect")
 			.executes(this::help)
 			.then(Commands.literal("help").requires(Perms.PROTECT_HELP.predicate()).executes(this::help))
@@ -360,7 +363,7 @@ public final class ProtectModule implements ServerXModule {
 
 	private static ItemStack createWand() {
 		ItemStack wand = new ItemStack(Items.GOLDEN_PICKAXE);
-		wand.set(DataComponents.CUSTOM_NAME, Component.literal("ServerX Wand").withStyle(ChatFormatting.GOLD));
+		wand.set(DataComponents.CUSTOM_NAME, Component.literal("ProtX Wand").withStyle(ChatFormatting.GOLD));
 		CompoundTag tag = new CompoundTag();
 		tag.putBoolean(WAND_TAG, true);
 		wand.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
@@ -393,6 +396,67 @@ public final class ProtectModule implements ServerXModule {
 		}
 		sessions.put(player.getUUID(), session);
 		return true;
+	}
+
+	// ---- selection outline ---------------------------------------------------------------
+
+	private static final DustParticleOptions OUTLINE = new DustParticleOptions(0xFFD54A, 0.5f);
+
+	/** Draws the selected cuboid as a faint dotted outline, visible only to the player selecting. */
+	private void showSelections() {
+		if (sessions.isEmpty() || !api.hasServer()) {
+			return;
+		}
+		for (Map.Entry<UUID, Session> entry : sessions.entrySet()) {
+			Session session = entry.getValue();
+			ServerPlayer player = api.server().getPlayerList().getPlayer(entry.getKey());
+			if (player == null || session.p1 == null || !(player.level() instanceof ServerLevel level)
+				|| !Location.dimId(level).equals(session.dim)) {
+				continue;
+			}
+			BlockPos other = session.p2 != null ? session.p2 : session.p1;
+			drawBox(level, player,
+				Math.min(session.p1.getX(), other.getX()), Math.min(session.p1.getY(), other.getY()), Math.min(session.p1.getZ(), other.getZ()),
+				Math.max(session.p1.getX(), other.getX()) + 1, Math.max(session.p1.getY(), other.getY()) + 1, Math.max(session.p1.getZ(), other.getZ()) + 1);
+		}
+	}
+
+	private void drawBox(ServerLevel level, ServerPlayer viewer, double x1, double y1, double z1, double x2, double y2, double z2) {
+		double[] xs = {x1, x2};
+		double[] ys = {y1, y2};
+		double[] zs = {z1, z2};
+		double perimeter = 4 * ((x2 - x1) + (y2 - y1) + (z2 - z1));
+		double step = Math.max(0.5, perimeter / 300.0); // keep big boxes cheap
+		for (double y : ys) {
+			for (double z : zs) {
+				line(level, viewer, x1, y, z, x2, y, z, step);
+			}
+		}
+		for (double x : xs) {
+			for (double z : zs) {
+				line(level, viewer, x, y1, z, x, y2, z, step);
+			}
+		}
+		for (double x : xs) {
+			for (double y : ys) {
+				line(level, viewer, x, y, z1, x, y, z2, step);
+			}
+		}
+	}
+
+	private void line(ServerLevel level, ServerPlayer viewer, double ax, double ay, double az, double bx, double by, double bz, double step) {
+		double length = Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay) + (bz - az) * (bz - az));
+		int points = Math.max(1, (int) Math.ceil(length / step));
+		for (int i = 0; i <= points; i++) {
+			double t = (double) i / points;
+			double x = ax + (bx - ax) * t;
+			double y = ay + (by - ay) * t;
+			double z = az + (bz - az) * t;
+			if (viewer.distanceToSqr(x, y, z) > 64 * 64) {
+				continue; // too far to see or worth sending
+			}
+			level.sendParticles(viewer, OUTLINE, false, false, x, y, z, 1, 0, 0, 0, 0);
+		}
 	}
 
 	private void wandClick(ServerPlayer player, Level level, BlockPos pos, boolean firstCorner) {
@@ -506,7 +570,7 @@ public final class ProtectModule implements ServerXModule {
 		}
 		int decayTicks = ProtLib.shortestDecay(atPlace);
 		if (decayTicks != Integer.MAX_VALUE) {
-			lib.trackPlacement(level, placePos, decayTicks);
+			lib.trackPlacement(level, placePos, decayTicks, sp.getUUID());
 		}
 		return InteractionResult.PASS;
 	}

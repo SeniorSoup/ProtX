@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "id": "serverx",
+  "id": "protx",
   "version": "${version}",
-  "name": "ServerX",
+  "name": "ProtX",
   "description": "Server-side moderation utilities (protected regions, prison, remote console) with LuckPerms permission nodes and an extension API.",
   "authors": [],
   "license": "All-Rights-Reserved",
   "environment": "server",
   "entrypoints": {
     "main": [
-      "com.serverx.ServerX"
+      "com.protx.ProtX"
     ]
   },
   "mixins": [
-    "serverx.mixins.json"
+    "protx.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.19.0",

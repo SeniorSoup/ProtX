@@ -1,7 +1,7 @@
-package com.serverx.mixin;
+package com.protx.mixin;
 
-import com.serverx.ServerX;
-import com.serverx.protlib.ProtLib;
+import com.protx.ProtX;
+import com.protx.protlib.ProtLib;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ServerExplosion;
@@ -26,8 +26,8 @@ public abstract class ServerExplosionMixin {
 	private ServerLevel level;
 
 	@Inject(method = "calculateExplodedPositions", at = @At("RETURN"), cancellable = true)
-	private void serverx$spareProtectedBlocks(CallbackInfoReturnable<List<BlockPos>> cir) {
-		ProtLib protLib = ServerX.api().findService(ProtLib.class).orElse(null);
+	private void protx$spareProtectedBlocks(CallbackInfoReturnable<List<BlockPos>> cir) {
+		ProtLib protLib = ProtX.api().findService(ProtLib.class).orElse(null);
 		if (protLib == null) {
 			return;
 		}

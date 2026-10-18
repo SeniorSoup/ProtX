@@ -1,16 +1,16 @@
-package com.serverx.modules;
+package com.protx.modules;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.serverx.api.ServerXApi;
-import com.serverx.api.ServerXModule;
-import com.serverx.core.Location;
-import com.serverx.core.Msg;
-import com.serverx.core.PlayerDirectory;
-import com.serverx.core.Perms;
-import com.serverx.core.TimeParser;
+import com.protx.api.ProtXApi;
+import com.protx.api.ProtXModule;
+import com.protx.core.Location;
+import com.protx.core.Msg;
+import com.protx.core.PlayerDirectory;
+import com.protx.core.Perms;
+import com.protx.core.TimeParser;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
@@ -30,13 +30,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * /prison, /punishban, /pardonban, /setprison. Prisoners cannot use items, break/place/use blocks,
+ * /prison, /prisonip, /punishban, /punishbanip, /pardonban, /pardonip, /setprison. Prisoners cannot use items, break/place/use blocks,
  * hit entities or run commands, and are pulled back if they wander off or change dimension.
  * Sentences survive restarts and keep running while the player is offline.
  */
-public final class PrisonModule implements ServerXModule {
+public final class PrisonModule implements ProtXModule {
 
-	private ServerXApi api;
+	private ProtXApi api;
 	private PrisonService service;
 
 	@Override
@@ -47,7 +47,7 @@ public final class PrisonModule implements ServerXModule {
 	// ---- lifecycle -----------------------------------------------------------------------
 
 	@Override
-	public void onInit(ServerXApi api) {
+	public void onInit(ProtXApi api) {
 		this.api = api;
 		this.service = new PrisonService(api);
 		api.registerService(PrisonService.class, service);
@@ -74,17 +74,17 @@ public final class PrisonModule implements ServerXModule {
 	}
 
 	@Override
-	public void onEnable(ServerXApi api) {
+	public void onEnable(ProtXApi api) {
 		service.load();
 	}
 
 	@Override
-	public void onDisable(ServerXApi api) {
+	public void onDisable(ProtXApi api) {
 		service.save();
 	}
 
 	@Override
-	public void onReload(ServerXApi api) {
+	public void onReload(ProtXApi api) {
 		service.load();
 	}
 
@@ -99,13 +99,32 @@ public final class PrisonModule implements ServerXModule {
 	// ---- commands ------------------------------------------------------------------------
 
 	@Override
-	public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, ServerXApi api) {
+	public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher, ProtXApi api) {
 		dispatcher.register(Commands.literal("prison").requires(Perms.PRISON.predicate())
-			.then(Commands.argument("player", StringArgumentType.word()).suggests(this::suggestPlayers)
+			.then(Commands.argument("player", StringArgumentType.word()).suggests(this::suggestOnlinePlayers)
 				.then(Commands.argument("time", StringArgumentType.word())
 					.executes(ctx -> prison(ctx, ""))
 					.then(Commands.argument("reason", StringArgumentType.greedyString())
 						.executes(ctx -> prison(ctx, StringArgumentType.getString(ctx, "reason")))))));
+
+		// IP prison: jails the player AND every account seen on their IP, and anyone who joins from it later.
+		dispatcher.register(Commands.literal("prisonip").requires(Perms.PRISONIP.predicate())
+			.then(Commands.argument("player", StringArgumentType.word()).suggests(this::suggestOnlinePlayers)
+				.then(Commands.argument("time", StringArgumentType.word())
+					.executes(ctx -> prisonIp(ctx, false, ""))
+					.then(Commands.argument("reason", StringArgumentType.greedyString())
+						.executes(ctx -> prisonIp(ctx, false, StringArgumentType.getString(ctx, "reason")))))));
+
+		dispatcher.register(Commands.literal("punishbanip").requires(Perms.PUNISHBANIP.predicate())
+			.then(Commands.argument("player", StringArgumentType.word()).suggests(this::suggestOnlinePlayers)
+				.executes(ctx -> prisonIp(ctx, true, ""))
+				.then(Commands.argument("reason", StringArgumentType.greedyString())
+					.executes(ctx -> prisonIp(ctx, true, StringArgumentType.getString(ctx, "reason"))))));
+
+		dispatcher.register(Commands.literal("pardonip").requires(Perms.PARDONIP.predicate())
+			.then(Commands.argument("player", StringArgumentType.word())
+				.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(service.jailedNames(), builder))
+				.executes(this::pardonIp)));
 
 		dispatcher.register(Commands.literal("punishban").requires(Perms.PUNISHBAN.predicate())
 			.then(Commands.argument("player", StringArgumentType.word()).suggests(this::suggestPlayers)
@@ -166,6 +185,15 @@ public final class PrisonModule implements ServerXModule {
 		return prisoners.size();
 	}
 
+	private java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestOnlinePlayers(
+		CommandContext<CommandSourceStack> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
+		List<String> names = new ArrayList<>();
+		for (ServerPlayer player : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+			names.add(player.getScoreboardName());
+		}
+		return SharedSuggestionProvider.suggest(names, builder);
+	}
+
 	private java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestPlayers(
 		CommandContext<CommandSourceStack> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
 		List<String> names = new ArrayList<>(api.players().knownNames());
@@ -197,7 +225,7 @@ public final class PrisonModule implements ServerXModule {
 		MinecraftServer server = source.getServer();
 		Optional<PlayerDirectory.Target> found = api.players().resolve(server, name);
 		if (found.isEmpty()) {
-			Msg.failure(source, "Unknown player '" + name + "'. ServerX knows players who have joined since it was installed.");
+			Msg.failure(source, "Unknown player '" + name + "'. ProtX knows players who have joined since it was installed.");
 			return 0;
 		}
 		PlayerDirectory.Target target = found.get();
@@ -220,6 +248,61 @@ public final class PrisonModule implements ServerXModule {
 		return 1;
 	}
 
+	private int prisonIp(CommandContext<CommandSourceStack> ctx, boolean permanent, String reason) {
+		CommandSourceStack source = ctx.getSource();
+		long millis = 0;
+		if (!permanent) {
+			String time = StringArgumentType.getString(ctx, "time");
+			millis = TimeParser.parseMillis(time);
+			if (millis <= 0) {
+				Msg.failure(source, "'" + time + "' is not a valid time. Use e.g. 30s, 10m, 2h, 1d or 1h30m (a plain number means minutes).");
+				return 0;
+			}
+		}
+		String name = StringArgumentType.getString(ctx, "player");
+		Optional<PlayerDirectory.Target> found = api.players().resolve(source.getServer(), name);
+		if (found.isEmpty()) {
+			Msg.failure(source, "Unknown player '" + name + "'.");
+			return 0;
+		}
+		PlayerDirectory.Target target = found.get();
+		ServerPlayer executor = source.getPlayer();
+		if (executor != null && executor.getUUID().equals(target.id())) {
+			Msg.failure(source, "You cannot imprison yourself.");
+			return 0;
+		}
+		if (target.online() != null && Perms.PRISON_EXEMPT.has(target.online())) {
+			Msg.failure(source, target.name() + " is exempt from prison.");
+			return 0;
+		}
+		PrisonService.IpResult result = service.jailIp(source.getServer(), target, permanent, millis,
+			source.getTextName(), reason, p -> Perms.PRISON_EXEMPT.has(p) || (executor != null && p.getUUID().equals(executor.getUUID())));
+		if (result.result() == PrisonService.Result.NO_PRISON) {
+			Msg.failure(source, "No prison is set yet. Stand where you want it and run /setprison.");
+			return 0;
+		}
+		if (result.ip() == null) {
+			Msg.failure(source, "ProtX has no IP recorded for " + target.name() + " yet (IPs are recorded when a player joins). Ask them to rejoin.");
+			return 0;
+		}
+		Msg.success(source, "IP of " + target.name() + " is imprisoned " + (permanent ? "permanently" : "for " + TimeParser.format(millis))
+			+ ". Jailed now: " + String.join(", ", result.names()) + ". Anyone joining from that IP will be jailed too.");
+		return 1;
+	}
+
+	private int pardonIp(CommandContext<CommandSourceStack> ctx) {
+		CommandSourceStack source = ctx.getSource();
+		String name = StringArgumentType.getString(ctx, "player");
+		Optional<PlayerDirectory.Target> found = api.players().resolve(source.getServer(), name);
+		List<String> released = found.isEmpty() ? List.of() : service.pardonIp(source.getServer(), found.get().id());
+		if (found.isEmpty() || released.isEmpty()) {
+			Msg.failure(source, "'" + name + "' has no active IP prison sentence.");
+			return 0;
+		}
+		Msg.success(source, "IP sentence lifted. Released: " + String.join(", ", released) + ".");
+		return 1;
+	}
+
 	private int pardon(CommandContext<CommandSourceStack> ctx) {
 		CommandSourceStack source = ctx.getSource();
 		String name = StringArgumentType.getString(ctx, "player");
@@ -237,7 +320,7 @@ public final class PrisonModule implements ServerXModule {
 		Location location = Location.of(player);
 		service.setPrison(location);
 		Msg.success(ctx.getSource(), "Prison set to " + location.describe() + ". Prisoners are kept within "
-			+ api.config().prisonLeashRadius + " blocks of it (change prisonLeashRadius in config/serverx/config.json).");
+			+ api.config().prisonLeashRadius + " blocks of it (change prisonLeashRadius in config/protx/config.json).");
 		return 1;
 	}
 }

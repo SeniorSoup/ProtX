@@ -1,4 +1,4 @@
-package com.serverx.core;
+package com.protx.core;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Remembers every player ServerX has seen (uuid -> last name) so moderation commands also work
+ * Remembers every player ProtX has seen (uuid -> last name) so moderation commands also work
  * on players who are offline right now.
  */
 public final class PlayerDirectory {

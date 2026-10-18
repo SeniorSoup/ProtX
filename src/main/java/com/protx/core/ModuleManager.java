@@ -1,9 +1,9 @@
-package com.serverx.core;
+package com.protx.core;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.serverx.ServerX;
-import com.serverx.api.ServerXApi;
-import com.serverx.api.ServerXModule;
+import com.protx.ProtX;
+import com.protx.api.ProtXApi;
+import com.protx.api.ProtXModule;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.CommandSourceStack;
 
@@ -15,28 +15,28 @@ import java.util.function.Consumer;
 /** Owns the module list and runs each lifecycle step, so one broken module cannot take down the rest. */
 public final class ModuleManager {
 
-	private final ServerXApi api;
-	private final Map<String, ServerXModule> modules = new LinkedHashMap<>();
+	private final ProtXApi api;
+	private final Map<String, ProtXModule> modules = new LinkedHashMap<>();
 
-	public ModuleManager(ServerXApi api) {
+	public ModuleManager(ProtXApi api) {
 		this.api = api;
 	}
 
-	public void register(ServerXModule module) {
+	public void register(ProtXModule module) {
 		if (modules.putIfAbsent(module.id(), module) != null) {
-			ServerX.LOGGER.warn("Ignoring module with duplicate id '{}'", module.id());
+			ProtX.LOGGER.warn("Ignoring module with duplicate id '{}'", module.id());
 		}
 	}
 
-	/** Picks up modules that other mods declare under the "serverx" entrypoint. */
+	/** Picks up modules that other mods declare under the "protx" entrypoint. */
 	public void loadExtensions() {
-		for (ServerXModule module : FabricLoader.getInstance().getEntrypoints("serverx", ServerXModule.class)) {
+		for (ProtXModule module : FabricLoader.getInstance().getEntrypoints("protx", ProtXModule.class)) {
 			register(module);
-			ServerX.LOGGER.info("Loaded ServerX extension '{}'", module.id());
+			ProtX.LOGGER.info("Loaded ProtX extension '{}'", module.id());
 		}
 	}
 
-	public Collection<ServerXModule> all() {
+	public Collection<ProtXModule> all() {
 		return modules.values();
 	}
 
@@ -61,12 +61,12 @@ public final class ModuleManager {
 		each("reload", module -> module.onReload(api));
 	}
 
-	private void each(String step, Consumer<ServerXModule> action) {
-		for (ServerXModule module : modules.values()) {
+	private void each(String step, Consumer<ProtXModule> action) {
+		for (ProtXModule module : modules.values()) {
 			try {
 				action.accept(module);
 			} catch (Throwable t) {
-				ServerX.LOGGER.error("Module '{}' failed during {}", module.id(), step, t);
+				ProtX.LOGGER.error("Module '{}' failed during {}", module.id(), step, t);
 			}
 		}
 	}

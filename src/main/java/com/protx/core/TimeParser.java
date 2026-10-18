@@ -1,4 +1,4 @@
-package com.serverx.core;
+package com.protx.core;
 
 import java.util.Locale;
 import java.util.regex.Matcher;

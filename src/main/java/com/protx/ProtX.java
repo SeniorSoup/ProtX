@@ -1,12 +1,12 @@
-package com.serverx;
+package com.protx;
 
-import com.serverx.api.ServerXApi;
-import com.serverx.core.ModuleManager;
-import com.serverx.core.Msg;
-import com.serverx.modules.AdminModule;
-import com.serverx.modules.PrisonModule;
-import com.serverx.modules.PrisonService;
-import com.serverx.modules.ProtectModule;
+import com.protx.api.ProtXApi;
+import com.protx.core.ModuleManager;
+import com.protx.core.Msg;
+import com.protx.modules.AdminModule;
+import com.protx.modules.PrisonModule;
+import com.protx.modules.PrisonService;
+import com.protx.modules.ProtectModule;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -17,41 +17,41 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ServerX entry point. It only wires things together - all features live in modules
- * (see {@link com.serverx.api.ServerXModule}). To add a feature, write a module and register it below.
+ * ProtX entry point. It only wires things together - all features live in modules
+ * (see {@link com.protx.api.ProtXModule}). To add a feature, write a module and register it below.
  */
-public final class ServerX implements ModInitializer {
+public final class ProtX implements ModInitializer {
 
-	public static final String MOD_ID = "serverx";
-	public static final Logger LOGGER = LoggerFactory.getLogger("ServerX");
+	public static final String MOD_ID = "protx";
+	public static final Logger LOGGER = LoggerFactory.getLogger("ProtX");
 
-	private static ServerXApi api;
+	private static ProtXApi api;
 	private static ModuleManager modules;
 
-	public static ServerXApi api() {
+	public static ProtXApi api() {
 		if (api == null) {
-			throw new IllegalStateException("ServerX has not been initialised yet");
+			throw new IllegalStateException("ProtX has not been initialised yet");
 		}
 		return api;
 	}
 
 	public static ModuleManager modules() {
 		if (modules == null) {
-			throw new IllegalStateException("ServerX has not been initialised yet");
+			throw new IllegalStateException("ProtX has not been initialised yet");
 		}
 		return modules;
 	}
 
 	@Override
 	public void onInitialize() {
-		api = new ServerXApi(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID));
+		api = new ProtXApi(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID));
 		modules = new ModuleManager(api);
 
 		// Built-in modules. Add your own here: modules.register(new MyModule());
 		modules.register(new AdminModule());
 		modules.register(new PrisonModule());
 		modules.register(new ProtectModule());
-		// Modules from other mods (fabric.mod.json -> "entrypoints" -> "serverx")
+		// Modules from other mods (fabric.mod.json -> "entrypoints" -> "protx")
 		modules.loadExtensions();
 
 		modules.init();
@@ -69,7 +69,7 @@ public final class ServerX implements ModInitializer {
 		ServerTickEvents.END_SERVER_TICK.register(server -> api.scheduler().tick());
 		api.scheduler().repeat(10, api::pollPlayers);
 
-		LOGGER.info("ServerX loaded with {} module(s)", modules.all().size());
+		LOGGER.info("ProtX loaded with {} module(s)", modules.all().size());
 	}
 
 	/**

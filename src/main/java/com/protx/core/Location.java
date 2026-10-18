@@ -1,4 +1,4 @@
-package com.serverx.core;
+package com.protx.core;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
