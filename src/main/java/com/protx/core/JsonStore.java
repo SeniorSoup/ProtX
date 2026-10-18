@@ -32,6 +32,7 @@ public final class JsonStore {
 				Files.move(file, file.resolveSibling(file.getFileName() + ".corrupt-" + System.currentTimeMillis()));
 			} catch (IOException ignored) {
 				// nothing more we can do
+			}
 			return fallback.get();
 		}
 	}
