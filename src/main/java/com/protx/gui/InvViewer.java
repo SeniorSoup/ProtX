@@ -8,8 +8,9 @@ import net.minecraft.world.Container;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -50,14 +51,14 @@ public final class InvViewer {
 		staff.openMenu(new SimpleMenuProvider((id, playerInv, p) ->
 				new ChestMenu(MenuType.GENERIC_9x6, id, playerInv, view, 6) {
 					@Override
-					public void clicked(int slotId, int button, ClickType type, Player player) {
+					public void clicked(int slotId, int button, ContainerInput type, Player player) {
 						boolean inView = slotId >= 0 && slotId < SIZE;
 						boolean filler = inView && map(slotId) < 0;
 						boolean modifying = inView
-								|| type == ClickType.QUICK_MOVE
-								|| type == ClickType.QUICK_CRAFT
-								|| type == ClickType.PICKUP_ALL
-								|| type == ClickType.SWAP;
+								|| type == ContainerInput.QUICK_MOVE
+								|| type == ContainerInput.QUICK_CRAFT
+								|| type == ContainerInput.PICKUP_ALL
+								|| type == ContainerInput.SWAP;
 						if (filler || (!editable && modifying)) {
 							this.sendAllDataToRemote(); // undo the client's prediction
 							return;
@@ -74,7 +75,7 @@ public final class InvViewer {
 
 		ProxyContainer(ServerPlayer target) {
 			this.target = target;
-			this.filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+			this.filler = new ItemStack(Items.STAINED_GLASS_PANE.pick(DyeColor.GRAY));
 			this.filler.set(DataComponents.CUSTOM_NAME, Component.literal(" ").withStyle(ChatFormatting.GRAY));
 		}
 

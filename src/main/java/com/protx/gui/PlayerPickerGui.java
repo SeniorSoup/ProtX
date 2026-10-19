@@ -1,7 +1,7 @@
 package com.protx.gui;
 
 import com.protx.core.Msg;
-import com.protlib.util.Location;
+import com.protx.core.Location;
 import com.protx.core.Teleports;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -14,8 +14,9 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
@@ -113,7 +114,7 @@ public final class PlayerPickerGui {
 				container.setItem(i, head(player, player.getUUID().equals(selected)));
 			}
 
-			ItemStack filler = named(new ItemStack(Items.GRAY_STAINED_GLASS_PANE), Component.literal(" "));
+			ItemStack filler = named(new ItemStack(Items.STAINED_GLASS_PANE.pick(DyeColor.GRAY)), Component.literal(" "));
 			for (int slot = PER_PAGE; slot < SIZE; slot++) {
 				container.setItem(slot, filler.copy());
 			}
@@ -188,8 +189,8 @@ public final class PlayerPickerGui {
 		}
 
 		@Override
-		public void clicked(int slotId, int button, ClickType type, Player player) {
-			if (type == ClickType.PICKUP && slotId >= 0 && slotId < SIZE) {
+		public void clicked(int slotId, int button, ContainerInput type, Player player) {
+			if (type == ContainerInput.PICKUP && slotId >= 0 && slotId < SIZE) {
 				state.click(slotId);
 			}
 			this.sendAllDataToRemote(); // undo whatever the client predicted
