@@ -7,6 +7,7 @@ import com.protx.modules.AdminModule;
 import com.protx.modules.PrisonModule;
 import com.protx.modules.PrisonService;
 import com.protx.modules.ProtectModule;
+import com.protx.modules.ToolsModule;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -51,6 +52,7 @@ public final class ProtX implements ModInitializer {
 		modules.register(new AdminModule());
 		modules.register(new PrisonModule());
 		modules.register(new ProtectModule());
+		modules.register(new ToolsModule());
 		// Modules from other mods (fabric.mod.json -> "entrypoints" -> "protx")
 		modules.loadExtensions();
 

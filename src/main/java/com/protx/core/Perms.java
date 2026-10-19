@@ -28,6 +28,13 @@ public final class Perms {
 	/** Build, break and interact inside protected regions without restrictions. */
 	public static final Perm PROTECT_BYPASS = Perm.of("protect.bypass", PermissionLevel.ADMINS);
 
+	// tools
+	public static final Perm INV = Perm.of("inv", PermissionLevel.ADMINS);
+	/** Lets /inv move items in the other player's inventory. Without it /inv is view-only. */
+	public static final Perm INV_EDIT = Perm.of("inv.edit", PermissionLevel.ADMINS);
+	public static final Perm BRING = Perm.of("bring", PermissionLevel.ADMINS);
+	public static final Perm GOTO = Perm.of("goto", PermissionLevel.ADMINS);
+
 	// prison
 	public static final Perm PUNISHBAN = Perm.of("punishban", PermissionLevel.ADMINS);
 	public static final Perm PARDONBAN = Perm.of("pardonban", PermissionLevel.ADMINS);

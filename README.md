@@ -18,6 +18,9 @@
 | `/setprison` | Sets the prison to where you stand. |
 | `/rmprison` | Removes the prison location. Refuses while anyone is jailed; `/rmprison force` releases everyone first. |
 | `/prisonlist` | Shows the prison location and every prisoner (permanent / time left, who jailed them, reason, offline marker). |
+| `/inv <player>` | Opens a GUI showing an online player's inventory (armor, offhand, main, hotbar). View-only unless you have `protx.inv.edit`. |
+| `/bring` | GUI of online player heads: click one to select, emerald block to confirm (they teleport to you), barrier to cancel. |
+| `/goto` | Same GUI, but you teleport to the selected player. |
 | `/strictprotect make <name>` | Like `/protect make`, but fully locked: no placing, breaking or using anything (chests, doors, signs too). |
 | `/strictprotect set <region> <true/false>` | Turn an existing region strict, or back to normal. |
 | `/protx` / `/protx reload` | Status / reload config, regions, prison. |
@@ -47,6 +50,8 @@ vanilla op levels are the fallback shown below.
 | `protx.prisonip` | op 2 |
 | `protx.prison` / `protx.prisonlist` | op 2 |
 | `protx.rmprison` / `protx.strictprotect` | op 3 |
+| `protx.inv` / `protx.bring` / `protx.goto` | op 3 |
+| `protx.inv.edit` | op 3 |
 | `protx.prison.exempt` | nobody (must be granted) |
 
 `protx.cmd` is effectively console access. Give it to nobody you would not give the panel to.
